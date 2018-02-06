@@ -1,0 +1,45 @@
+####### 6/FEBRERO/2018 #######
+
+getwd()
+#Importar datos txt guardados en la computadora
+tabla1 <- read.table("tabla1.txt",header = F)
+View(tabla1)
+#Importas datos txt en linea
+tabla2 <- read.table("https://www.nrc.gov/reading-rm/doc-collections/event-status/reactor-status/PowerReactorStatusForLast365Days.txt",header = T, sep="|")
+View(tabla2)
+tabla3 <- read.table("tabla3.txt", header=F,sep="/")
+# Si hay espacios en blanco y Valores NA notificarle a R 
+tabla3 <- read.table("tabla3.txt", header=F,sep="/", strip.white = T, na.strings = "VACIO")
+View(tabla3)
+#Importar datos csv
+#quote = Lo que este entre comillas R lo tome como cadena de caracteres
+#stringsAsFactors = que lo todos los datos los tome como factor
+tabla4 <- read.csv("tabla4.csv", header=T, quote = "\"", stringsAsFactors = T, strip.white = T )
+View(tabla4)
+# Importar datos csv2
+#fill = Para completar los espacios 
+tabla5 <- read.csv2("tabla5.csv2", header = F, quote = "\"", row.names = c("M","N","O","P","Q"), col.names = c("X","Y","Z","A","B"),
+          strip.white = T,   stringsAsFactors = T, fill = T)
+View(tabla5)
+
+install.packages("XLConnect")
+require(XLConnect)
+climate <- readWorksheetFromFile("climate.xlsx", sheet=1)
+View(climate)
+### Para especificar en que columna o fila va a empezar o terminar
+climate2 <- readWorksheetFromFile("climate.xlsx", sheet=1, startRow=26, endCol=4)
+View(climate2)
+### Para especificar que tome por regiones (darle un rango)
+climate3 <- readWorksheetFromFile("climate.xlsx", sheet=1, region="A1:G13")
+View(climate3)
+
+
+WB <- loadWorkbook("PortfoliobyLoanStatus.xls")
+### Para especificar la hoja ,ya no es necesario ponerle la extension porque el objeto ya esta guardado
+direcLoan <- readWorksheet(WB,sheet=1, startRow=6)
+View(direcLoan)
+
+install.packages("xlsx")
+require(xlsx)
+climate4 <- read.xlsx("climate.xlsx", sheetIndex=1)
+View(climate4)
