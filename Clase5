@@ -1,0 +1,104 @@
+######### 9 FEBRERO 2018 ##########
+
+subset(planetas,diametro>9)
+
+# REORDENAR LOS RENGLONES CON ALGUN CRITERIO EN LAS COLUMNAS
+posicion <- order(planetas$diametro)
+posicion 
+planetas[posicion,]
+
+Died.At <- c(22,40,72,41)
+Writer.At <- c(16,18,36,36)
+First.Name <- c("John","Edgar","Walt","Jane")
+Second.Name <- c("Doe","Poe","Whitman","Austen")
+Sex <- c("MALE","MALE","MALE","FEMALE")
+Date.Of.Dead <- c("2005-05-10","1849-10-07","1892-03-26","1817-07-18")
+
+writers <- data.frame(Died.At,Writer.At,First.Name,Second.Name,Sex,Date.Of.Dead)
+View(writers)
+
+#### Distinguir entre variables categoricas
+#### Para que tome como cadena de caracteres y no como variable categorica (Parentesis) 
+writers1 <- data.frame(Died.At,Writer.At,(First.Name),(Second.Name),Sex,Date.Of.Dead)
+
+#### Para distinguir a una cadena que esta dando fechas 
+help("as.Date")
+
+writers2 <- data.frame(Died.At,Writer.At,(First.Name),(Second.Name),Sex,as.Date(Date.Of.Dead, "%Y-%m-%d"))
+View(writers2)
+
+names(writers2)
+names(writers2) <- c("Age.at.Death","Age.As.Writer","Name","Surname","Gender","Death")
+rownames(writers2) <- c("ID1","ID2","ID3","ID4")
+dim(writers2)
+
+#### Nos da el numero de filas 
+dim(writers2)[1]
+nrow(writers2)
+#### Nos da el numero de columnas
+length(writers2)
+ncol(writers2)
+
+Ages <- writers2[,1:2]
+Ages
+
+### Para aplicar mediana a un grupo de datos
+# Por columnas
+apply(Ages,2,median)
+# Por filas
+apply(Ages,1,median)
+
+apply(Ages,2,mean)
+      
+
+### Definir una dataframe vacio
+ab <- data.frame()
+### Variables categoricas se definen como "factor"
+Age <- numeric()
+name <- character()
+ID <- integer()
+Gender<- factor()
+Date <- as.Date(character())
+ab <- data.frame(Age,name,ID, Gender, Date)
+ab
+
+##### PENDIENTE #####
+ab$Age <- c(34,36,24,57,21,22) 
+View(ab)
+#####################
+
+writers_names <- writers2[,3:4]
+writers_names
+
+#OPC2
+writers_names1 <- writers2[,c("Name","Surname")]
+writers_names1
+
+str(writers_names1)
+
+jane <- subset(writers2,Name=="Jane")
+jane
+
+#### Grep = busca en la columna (ruta) cualquier edad que tuviera un 4
+forty <- writers2[grep("4",writers2$Age.at.Death),] 
+forty
+
+subset(writers2, Age.at.Death >= 40 & Age.at.Death<60)
+
+#### Como eliminar filas o columnas en un dataframe
+#### 1) asignarle  un valor nulo a lo que se desea eliminar
+
+#Eliminar toda la columna
+writers2$Age.at.Death <- NULL
+View(writers2)
+
+### Eliminar solo un valor
+writers2[1,3] <- NA
+
+# Eliminar toda una fila
+fila_a_mantener <- c(F,T,F,T)
+limited_writers <- writers2[fila_a_mantener,]
+limited_writers
+### Negacion = eliminar lo contrario
+less_writers <- writers2[!fila_a_mantener,]
+less_writers
