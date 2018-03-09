@@ -1,0 +1,70 @@
+---
+title: "Clase_9Marzo"
+author: "EdgarGuevara"
+date: "9 de marzo de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### MODELOS DE REGRESION LINEAL ####
+```{r}
+setwd("C:/Users/USUARIO/Documents/Variables Categoricas/")
+getwd()
+x11(width = 7, height = 6, pointsize = 12)
+### Ejemplo de grafica (con nuevo comando)
+curve(expr = x^2, xlim = c(-1,2), col="red", main= "Grafica de f(x)= x^2", xlab = "x", ylab = "f(x)",
+      panel.first= grid(col = "gray", lty = "dotted"))
+```
+
+```{r}
+#Grafica para un modelo de regresion logistica
+
+x11(width = 7, height = 6, pointsize = 12)
+par(mfrow = c(1,2))
+beta0 <- 1
+beta1 <- 0.5
+  curve(expr = exp((beta0 + beta1*x)/(1+beta0 + beta1*x  )), xlim = c(-15,15), col= "black",
+        main = expression( pi == frac(e^{1+0.5*x[1]}, 1+ e^{1+0.5*x[1]})), xlab = expression(x[1]), ylab= expression(pi))
+  curve(expr = exp((beta0 + beta1*x)/(1+beta0 + beta1*x  )), xlim = c(-15,15), col= "black",
+        main = expression( pi == frac(e^{1-0.5*x[1]}, 1+ e^{1+0.5*x[1]})), xlab = expression(x[1]), ylab= expression(pi))
+placekick <- read.csv("Placekick.csv")  
+##Opcion2
+#placekick <- read.table(file="Placekick.csv", header =T, sep=",")
+
+tail(placekick)
+
+### Como estimar un modelo
+### glm = Modelo lineal generalizado
+# Formula: especifica variables dep, e indep.
+# Family : depende de las caracteristicas de las variables.
+mod.fit <- glm( formula = good ~ distance , family = binomial(link = logit), data = placekick)
+mod.fit
+names(mod.fit)
+class(mod.fit)
+### Que metodos se asocian a un modelo lineal
+methods(class = lm)
+### Agregar otro variable
+mod.fit2 <- glm( formula = good ~ distance + change  , family = binomial(link = logit), data = placekick)
+  mod.fit2
+  mod.fit2$coefficients
+  
+temp <- summary(mod.fit)
+names(temp)
+
+### MATRIZ DE VARIANZA COVARIANZA
+vcov(mod.fit)
+vcov(mod.fit)[2,2]  
+
+#### OBTENER ESTIMADOS DE LOS PARAMETROS (2DA OPCION)
+# 1RO OBTENEMOS LA FN. DE VEROSIMILITUD
+# 2DO MAXIMIZAMOS
+# FUNCION DE LOG-VEROSIMILITUD
+  logL <- function(beta, x,Y) {pi <- exp(beta[1] + beta[2]*x) / (1+ exp(beta[1] + beta[2]*x))
+                               sum(Y*log(pi) + (1-Y)*log(1-pi))
+                               }
+logL(beta = mod.fit$coefficients, x = placekick$distance, Y = placekick$good)
+###
+#library(rgl)
