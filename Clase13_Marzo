@@ -1,0 +1,107 @@
+---
+title: "Clase 13 Marzo"
+author: "EdgarGuevara"
+date: "13 de marzo de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+setwd("C:/Users/USUARIO/Documents/Variables Categoricas")
+placekick <- read.table("Placekick.csv", header = T, sep = ",")
+View(placekick)
+```
+
+```{r}
+## Modelo de Regresion logistica
+mod.fit <- glm(good ~ distance , family = binomial(link = logit), data = placekick)
+names(mod.fit)
+mod.fit$coefficients
+beta_0.hat <- mod.fit$coefficients[1]
+beta_1.hat <- mod.fit$coefficients[2]
+#Estimado de las probabilidades pi
+pi.hat <- mod.fit$fitted.values
+
+length(mod.fit$residuals)
+head(mod.fit$residuals)
+### Para saber para que nos sirve cada atributo utilizamos (glm)
+help("glm")
+class(mod.fit)
+
+## Lo que despilega esta funcion se llamaban funciones metodos, uqe nos isrven para obtener informacion adicional a la que se obtiene con el summary()
+### glm es una caso espicifico de lm (modelo lineal)
+methods(class = glm)
+
+### Nos da un resumen de que es lo que pasa con ese objeto
+summary(mod.fit)
+
+# obtener matriz de varianza-covarianza
+vcov(mod.fit)
+
+### logit es funcion de enlace y lo usamos porque queremos encontrar el logaritmo de los momios
+mod.fit2 <- glm(good~change+distance, binomial(link = logit), data = placekick)
+mod.fit2$coefficients
+
+### Los valores que maximizan la funcion de verosimilitud son los valores estimados de nuestros coeficientes (BO, B1)
+logL <- function(beta,x,Y){
+  pi <- exp(beta[1] + beta[2]*x )/ (1+exp(beta[1] + beta[2]*x))
+        sum(Y*log(pi) + (1-Y)*log(1-pi))}
+
+### Evaluar la funcion de verosimilitud en pi.hat
+logL(mod.fit$coefficients, placekick$distance, placekick$good)
+logLik(mod.fit)
+reg.mod <- lm(good~distance, data = placekick)
+reg.mod$coefficients
+
+### Minimiza la funcion con optim
+### pero utilizando control (al final) la maximiza
+mod.fit.optim <- optim(reg.mod$coefficients, logL, hessian = T, x = placekick$distance, Y= placekick$good, control = list(fnscale =-1), method = "BFGS" )
+names(mod.fit.optim)
+
+### Para mostrar los estimados de los parametros ya maximizados, atraves de la funcion de verosimilitud (par)
+mod.fit.optim$par
+## Para el valor maximo de la funcion de verosimilitud es:
+mod.fit.optim$value
+
+### "SOLVE "Nos ayuda a obtener la inversa de una Matriz
+# Matriz de covarianza para los estimados de los  parametros
+solve(mod.fit.optim$hessian)
+
+
+beta0.values <- seq(from=-5, to=18, by=0.1)
+beta1.values <- seq(from=-0.65, to=0.25, by=0.01)
+
+```
+
+
+```{r}
+# Redefiniendo los datos en forma binomial
+#  Calcular la proporcion de exitos para cada distancia
+w <- aggregate(good~distance, data = placekick, sum)
+n <- aggregate(good~distance, data = placekick, length) 
+w_n <- data.frame(distance =w$distance, success = w$good, trials= n$good, proportion = round(w$good/n$good,4))
+head(w_n)
+tail(w_n)
+mod.fit.bin <- glm(success/trials~distance,binomial(link = logit), data = w_n, trace=T )
+summary(mod.fit.bin)
+mod.fit.bin1 <- glm(success/trials~distance,weights = trials ,binomial(link = logit), data = w_n, trace=T )
+summary(mod.fit.bin1)
+
+```
+
+
+
+```{r}
+install.packages("car") #Nos va ayudar a obtener ANOVA para encontrar el estadistico de Wald
+require(car)
+### Modelo (change + distance)
+
+mod.fit.2 <- glm(good~ distance+change, data = placekick, binomial(link = logit))
+round(summary(mod.fit.2)$coefficients, 4)
+Anova(mod.fit.2, test.statistics = "Wald")
+### LTR = RAZON DE VEROSIMILITUD
+Anova(mod.fit.2, test = "LR")
