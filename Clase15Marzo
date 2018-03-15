@@ -1,0 +1,155 @@
+
+#### 15 Marzo 2018 ####
+
+
+```{r}
+### Pruban Hipotesis
+#Ho : logit(pi) = BO + B1* change
+#H1 : logit(pi) = BO + B1*Change + B2 *Distance
+# Mod.fit2 Considera a las variables Change y Distance como var.indep.
+anova(mod.fit2, test="Chisq")
+
+### Redifiniendo
+## Comparar Hipoytesis nula con hipotesis altervativa
+#Ho : logit(pi) = BO + B1* distance
+
+mod.fit.H0 <- glm(good ~ distance, family = binomial(link = logit), placekick)
+anova(mod.fit.H0, mod.fit2, test = "Chisq")
+# El valor 5.2455 corresponde a el valor de -2log(lambda)
+# Con base en los resultados
+
+
+
+### Haciendo un cambio con nuestras hipotesis 
+#Ho : logit(pi) = BO 
+#H1 : logit(pi) = BO + B1*Change
+
+mod.fit.H01 <- glm(good ~ 1, family = binomial(link = logit), placekick)
+mod.fit.Ha1 <- glm(good ~ change, family = binomial(link = logit), placekick)
+anova(mod.fit.H01, mod.fit.Ha1, test = "Chisq")
+#-2(lambda) = 24.277 con un p_value = 8.343e-07
+
+#### 2da Opcion para encontrar el valor de -2(lambda) y p_vaue sin hacer uso de anova
+## Objeto que guarde los estimados de los parametros cuando Ho es cierta (Parametros del modelo ya ajustados)
+names(mod.fit.H01)
+pi.hat.H0 <- mod.fit.H01$fitted.values
+## Objeto que guarde los estimados de los parametros cuando Ha es cierta (Parametros del modelo ya ajustados)
+pi.hat.Ha <- mod.fit.Ha1$fitted.values
+y <- placekick$good
+stat <- -2*sum(y*log(pi.hat.H0/pi.hat.Ha)+ (1-y)*log((1-pi.hat.H0)/(1-pi.hat.Ha))) # -> -2(lambda)
+p_value <- 1- pchisq(q= stat, df=1)
+data.frame(stat, p_value)
+#-2(lambda) = 24.277 con un p_value = 8.343e-07
+
+```
+
+
+
+```{r}
+#### RAZON DE MOMIOS (Incremento)
+
+#logit (pi) = log (pi/1-pi)
+
+# Considerando
+#logit(pi) = B0 + B1*x
+
+#La razon de momios para este modelo seria:
+# c= incremento en x
+  # OR = exp(c*B1)
+```
+
+```{r}
+### EJEMPLO
+mod.fitm <- glm(good~distance, binomial(link = logit), data = placekick)
+mod.fitm
+### C=1
+### El estimados de los momios de exito de un gol de campo disminuyen en un 11% por cada  yarda que aumentemos la distancia de la patada
+exp(mod.fitm$coefficients[2]*1)
+### c = -10
+exp(mod.fitm$coefficients[2]*-10)
+### El estimados de los momios de exito de un gol de campo aumentan en 3.159035 por cada 10 yardas que reduzcamos la distancia de la patada
+```
+
+```{r}
+#Intervalos de Confianza
+
+### Wald
+# Confit.default = Intervalo de Wald en R
+# parm = para que parametro estamos utilizando el intervalo de confianza
+beta.ci <- confint.default(mod.fitm, parm = "distance", level = .95)
+beta.ci
+
+#### Para aobtener el intervalo en razon de momios
+#cuando c =1
+exp(beta.ci)
+### Cuando incrementamos la distancia de la patada en una yarda disminuye entre 12% y 13%
+#Cuando c =10
+exp(beta.ci*10)
+### Cuando incrementamos la distancia de la patada en 10 yardas los momios disminuyen un  entre 73 y un y 63%
+# Cuando c =-10
+exp(beta.ci*-10)
+as.numeric(rev(round(exp(beta.ci*-10),2)))
+## Cuando disminuimos la distancia de la patada en 10 yardas los momios aumentan un  entre 2.68 y un y 3.72 veces.
+
+### Intervalo de Confianza para Razon de Verosimilitud
+beta.ci1 <- confint(mod.fitm, parm = "distance", level = 0.95)
+beta.ci1
+# Cuando c
+as.numeric(rev(round(exp(beta.ci1*-10),2)))
+# Por cada 10 yardas que reduzcamos la distancia de la patada los momios aumentan en 2.69 y 3.74 veces
+
+### Perfil de Verosimilitud
+install.packages("mcprofile")
+require(mcprofile)
+K <- matrix(data = c(0,1), nrow = 1, ncol = 2, byrow = T)
+linear.combo <- mcprofile(object=mod.fitm, CM= K)
+ci.log.OR <- confint(object = linear.combo, level = .95, adjust ="none")
+names(ci.log.OR)
+as.numeric(rev(exp(ci.log.OR$confint*-10)))
+# Por cada 10 yardas que reduzcamos la distancia de la patada los momios aumentan en 2.693 y 3.735 veces
+
+```
+
+```{r}
+### Calcular la probabilidad de exito (pi)
+### Caso = B0+ B1*x
+### Como pi puede cambiar dependiendo la muestra, primero hay que sacar un intervalo de confianza para pi
+
+# Estimacion de la probabilidad de exito
+# pi.hat para una distancia de 20 yardas
+# x=20
+linear.pred <- mod.fitm$coefficients[1] + mod.fitm$coefficients[2]*20
+linear.pred
+exp(linear.pred) / (1+exp(linear.pred)) 
+### A una distancia de 20 yardas hay una probabilidad de acertar el gol de campo de .98
+
+# 2da Opcion para x =20
+predict.data <- data.frame(distance=20)
+## En terminos de logit
+predict(object = mod.fitm, newdata = predict.data, type = "link")
+## En terminos de la probabilidad de exito 
+predict(object = mod.fitm, newdata = predict.data, type = "response")
+
+# 3ra Opcion para x=20
+head(placekick$distance==20)
+mod.fitm$fitted.values[3]
+
+#############################  Intervalo de wald  ##############################
+alpha <- 0.05
+#se = Para especificar que dentro del radical (varianza) queremos eso
+linear.pred <- predict(object = mod.fitm, newdata = predict.data, type = "link", se= TRUE)
+linear.pred
+
+pi.hatp <- exp(linear.pred$fit/ (1+linear.pred$fit))
+CI.lin.pred <- linear.pred$fit + qnorm(p = c(alpha/2, 1- alpha/2))*linear.pred$se
+CI.pi <- exp(CI.lin.pred) / (1+ exp(CI.lin.pred))
+CI.pi
+
+round(data.frame(predict.data, pi.hatp, lower= CI.pi[1], upper= CI.pi[2]),4)
+## Interpretacion, es que hay una probabilidad muy alta
+K <- matrix (data= c(1,20), nrow = 1, ncol = 2)
+K
+linear.combo <- mcprofile(object = mod.fitm, CM=K) # Calcular -2(lambda)
+linear.combo
+
+```
