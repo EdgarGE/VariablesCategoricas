@@ -1,0 +1,107 @@
+---
+title: "20Marzo"
+author: "Edgar Guevara"
+date: "20 de marzo de 2018"
+output: html_document
+---
+
+```{r}
+setwd("C:/Users/USUARIO/Documents/Var_Categoricas")
+getwd()
+challenger <- read.table("challenger.csv", header = TRUE, sep = ",")
+challenger$O.ring > 0
+names(challenger)
+
+
+```
+
+
+```{r}
+placekick <- read.table("placekick.csv", header = TRUE, sep = ",")
+# ho= No es necesario agregar la relacion entre la distancia y el viento
+mod.fit.H0 <- glm(good ~ distance + wind , binomial(link = logit), placekick)
+# h1= Es necesario agregar la relacion entre la distancia y el viento
+mod.fit.H1 <- glm(good ~ distance + wind+ distance:wind , binomial(link = logit), placekick)
+summary(mod.fit.H0)
+anova(mod.fit.H1)
+anova(mod.fit.H0,mod.fit.H1, test= "Chisq")
+## De acuerdo a este comando (anterior) se acepta la hipotesis altervativa, es decir, la interaccion entre el viento y la distancia es buena
+
+### RAZON DE MOMIOS (Para viento a una distancia especifica)
+beta.hat <- mod.fit.H1$coefficients[2:4]
+# Opc.2
+# beta.hat <- mod.fit.H1$coefficients[-1]
+beta.hat
+c <- 1
+distance <- seq(20,60,10)
+#OR estimado
+OR.wind <- exp(c*(beta.hat[2]+beta.hat[3]*distance))
+# Matriz de covarianza para bet^_1, beta^_2 y beta^_3
+cov.mat <- vcov(mod.fit.H1)[2:4,2:4]
+cov.mat
+# Var (beta^_2+ distance*beta^_3"")
+var.log.OR <- cov.mat[2,2]+ distance^2*cov.mat[3,3]+ 2*distance*cov.mat[2,3]
+ci.log.OR.low <- c*(beta.hat[2]+ beta.hat[3]*distance) - c*qnorm(p=0.975)*sqrt(var.log.OR)
+ci.log.OR.up <- c*(beta.hat[2]+ beta.hat[3]*distance) + c*qnorm(p=0.975)*sqrt(var.log.OR)
+data.frame(OR.wind, OR.low = exp(ci.log.OR.low), OR.up =exp(ci.log.OR.up))
+# A una distancia de 20 yardas , por cada incremento en una yarda en la distancia la razon de momios esta entre     .42785580 y 11.4673596 
+cbind(distance,data.frame(OR.wind, OR.low = exp(ci.log.OR.low), OR.up =exp(ci.log.OR.up)))
+# A una distancia de 50 yardas en condiciones de viento , por cada incremento en una yarda en la distancia la      razon de momios disminuye entre un .04985037 y .6473679 (Probabilidad de exito disminuye)
+# Para una distancia de al menos 40 yardas el viento ejerce influencia en el exito o fracaso de la patada, esto ya que 1 no se encuentra dentro del intervalo de Wald (Or.low y Or.up)  
+
+### Que pasa con la razon de momios is disminiumos la distancia en una yarda ###
+round(data.frame(distance=distance, OR.hat = 1/ OR.wind, OR.low = 1/exp(ci.log.OR.up), OR.up= 1/exp(ci.log.OR.low)),2)
+#### A mayor sea la distancia de la patada mas influencia tiene el viento   
+   
+```
+
+
+
+```{r}
+# Supongamos una variable con "q"" niveles, entonces se van a necesitar "q-1" indicadores
+# EJEMPLO:
+# q = 4 niveles, 3 Indicadores (x1,x2,x3)
+
+# Niveles    X1   X2   X3
+#   A         0    0    0
+#   B         1    0    0
+#   C         0    1    0
+#   D         0    0    1
+
+# Por lo tanto la regresion para esta variable quedaria como:
+# logit(pi) = B0 + (B1*X1) + (B2*X2) + (B3*X3)
+
+```
+
+
+```{r}
+tomato <- read.csv("TomatoVirus.csv")
+View(tomato)
+### Queremos que no haya virus en la planta de tomate, una forma de trasmitir el virus a traves de un insecto.
+# Infest: variable categorica que tiene 2 niveles (1= Metodo de infeccion fue poner plantas ya infectadas ,2=              Metodo de infeccion fue poner insectos ya infectados)
+# Control: Variable vategorica que tiene 3 nieveles(C=Control de tipo Quimico, B=Control Biologico, N=no se                 realizo ningun control )
+# Platas: Numero de plantas sin virus
+# Virus8 : Numero de plantas infectadas con Virus despues de 8 semanas 
+
+class(tomato$Control)
+levels(tomato$Control)
+
+# Para ver la tabla de niveles e indicadores:
+# Contrast = como esta representando los niveles de la variable categorica
+contrasts(tomato$Control)
+
+class(tomato$Infest)
+levels(tomato$Infest)
+### Transformamos la variable entera a categorica 
+tomato$Infest <- as.factor(tomato$Infest)
+
+### MODELO
+# Proporcion de exitos  virus8/Plants <- variable dependiente
+mod.fit <- glm(formula = Virus8/Plants ~ Infest + Control , family = binomial(link = logit), tomato, weights = Plants)
+summary(mod.fit)
+
+### INTERPRETACION DE COEFICIENTES 
+
+# Como infest2 es positivo la probabildad de que se presenten sintomas de infeccion crece para aquellos inveraderos en donde se aplico el metodo de infeccion 2, es decir por insectos.
+# Como Control C es negativo la probabildad de que se presenten sintomas de infeccion disminuye para aquellos inveraderos en donde hubo un control de tipo Quimico, es decir, insecticidas.
+# Como Control N es positivo la probabildad de que se presenten sintomas de infeccion crece para aquellos inveraderos en donde no hubo ningun control.
