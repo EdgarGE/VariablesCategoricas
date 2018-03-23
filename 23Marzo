@@ -1,0 +1,124 @@
+---
+title: "23 Marzo"
+author: "Edgar Guevara"
+date: "23 de marzo de 2018"
+output: html_document
+---
+
+
+
+```{r}
+setwd("C:/Users/USUARIO/Documents/Var_Categoricas")
+```
+
+```{r}
+tomato <- read.csv("TomatoVirus.csv", header = T, sep = ",")
+View(tomato)
+### Queremos que no haya virus en la planta de tomate, una forma de trasmitir el virus a traves de un insecto.
+# Infest: variable categorica que tiene 2 niveles (1= Metodo de infeccion fue poner plantas ya infectadas ,2=              Metodo de infeccion fue poner insectos ya infectados)
+# Control: Variable vategorica que tiene 3 nieveles(C=Control de tipo Quimico, B=Control Biologico, N=no se                 realizo ningun control ) 
+# Platas: Numero de plantas sin virus ( 100 plantas sanas en cada invernadero)
+# Virus8 : Numero de plantas infectadas con Virus despues de 8 semanas 
+
+# exito = plantas que resulatron infectadas
+### Variable Infest de entero  a  factor (var. categorica)
+### Nivel base, aquella fila que tiene "0"
+tomato$Infest <- as.factor(tomato$Infest)
+head(tomato)
+
+```
+
+
+```{r}
+## Para cambiar los niveles
+temp <- factor(tomato$Control, levels = c("C","B","N"))
+levels(temp)
+## Para cambiar el nombre de los niveles
+temp2 <- factor(tomato$Control, labels = c("B1","C1","N1"))
+levels(temp2)
+### Nuestro 1er Modelo
+mod.fit <- glm(Virus8/Plants ~ Infest + Control, family = binomial(link = logit), data = tomato, weights = Plants)
+summary(mod.fit)
+
+# Infest2 = Asociado al segundo metodo de infeccion, la probabilidad de que la planta desarrolle infeccion es mas alta para aquellos invernaderos en donde se llevo acabo el metodo de infeccion 2
+# Control C = Cuando se suministra control quimico las probabilidades de que se desarrole el virus disminuye
+# Control N = Cuando no se suministra nigun control las probabilidades de que se desarrolle el virus aumenta
+
+```
+
+
+```{r}
+### Estimacion de un modelo que permite interacciones
+mod.fit.inter <- glm(Virus8/Plants ~ Infest + Control + Infest:Control, family = binomial(link = logit), data = tomato, weights = Plants)
+summary(mod.fit.inter)
+
+# Nuestras Hipotesis
+# H0: B5=B6=B7=B8 = 0  (Que las iteracciones no sean necesarias)
+# H1: B5=!0 u B6=!0 u B7=!0 u B8 =!0  (Que hay al menos una iteraccion necesaria)
+
+# Comparar dos modelos (anova)
+require(car)
+# Prueba del primer modelo contra el segundo modelo
+Anova(mod.fit.inter)
+# Hay fuerte evidencia para rechazar nuestra hipotesis nula en el modelo que permite iteracciones
+# ya que el p-value es menor a .05
+
+
+```
+
+```{r}
+# RAZON DE MOMIOS
+# logit(pi) = B0 + (B1*X1) + (B2*X2) + (B3*X3)
+
+# MOMIOS EN EL NIVEL A
+      # OddsA(x1=0,x2=0,x3=0) -> exp (B0)
+# MOMIOS EN EL NIVEL B
+      # OddsB(x1=1,x2=0,x3=0)-> exp(B0 + B1)
+# MOMIOS EN EL NIVEL C
+      # OddsC(x1=0,x2=1,x3=0)-> exp(B0 + B2)
+
+# OddsB / OddsA     =  exp(B0 + B1) / exp(B0) 
+#                   =  exp (B1)
+
+# OddsB / OddsC     =  exp(B0 + B1)  /  exp(B0 + B2)
+#                   =  exp(B1 - B2)
+
+### Momios: Para la variable Infest
+# Para tomar en cuenta el metodo de infeccion 2 con respecto al metodo de infeccion 1
+exp(mod.fit$coefficients[2])
+# Al utilizar el metodo de infeccion 2 la probabilidad de que la planta desarrolle la infeccion del virus aumenta # ya que es un valor mayor a 1 
+# Ahora para tomar en cuenta el metodo de infeccion 1 con respecto al metodo de infeccion 2
+1 / exp(mod.fit$coefficients[2])
+# Al utilizar el metodo de infeccion 1 la probabilidad de que la planta desarrolle la infeccion del virus disminuye, ya que es un valor menor a 1
+```
+
+```{r}
+# Intervalo de Wald (lo da automaticamente con confint.default)
+exp(confint.default(mod.fit, parm = "Infest2", level = 0.95))
+# Con un 95% de confianza los momios con respecto al metodo de infeccion 1 e infeccion2 son diferentes ya que el 1 no esta en el intervalo.
+
+```
+
+```{r}
+#Razon de momios (Para los controles)
+exp(mod.fit$coefficients[3:4])
+
+
+#### INTERVALO DE WALD
+exp(confint.default(mod.fit, parm = c("ControlC", "ControlN"), level = 0.95))
+# Cuando utilizamos un control quimico los sintomas de que una planta desarrolle infeccion decrecen (Control C)
+# Cuando no utilizamos ningun control  los sintomas de que una planta desarrolle infeccion aumenta entre un 30 y 20% (Control N)
+
+
+beta.hat <- mod.fit$coefficients[-1]
+beta.hat
+exp(beta.hat[3] - beta.hat[2])
+
+cov.mat <- vcov(mod.fit)[2:4,2:4]
+var.N.C <- cov.mat[3,3] + cov.mat[2,2] - 2*cov.mat[3,2]
+CI.betas <- beta.hat[3] - beta.hat[2] + qnorm(p=c(0.025, 0.975))*sqrt(var.N.C)
+exp(CI.betas)
+# Crecen entre un 300 y un 500%
+1/ exp(CI.betas)
+# decrecen entre un 80 y un 65%
+```
