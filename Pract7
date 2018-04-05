@@ -1,0 +1,42 @@
+---
+title: "Practica 7"
+author: "Edgar Guevara"
+date: "5 de abril de 2018"
+output: html_document
+---
+
+```{r}
+setwd("C:/Users/USUARIO/Documents/Var_Categoricas")
+placekickB <- read.csv("placekick.BW.csv", header = T, sep = ",")
+names(placekickB)
+View(placekickB)
+# VARAIBLES
+# -GameNum: identifica año y número de juego
+# -Kicker: Apellido del pateador
+# -Good: Y-éxito , N-fracaso
+# -Distance: Distancia en yardas
+# -Weather: Variable categórica con 4 niveles: “clouds”, “Inside”, “SnowRain” y “Sun”
+# -Wind15: 1 si la velocidad del viento es mayor o igual a 15 millas por hora, 0 en caso contrario.
+# -Temperature: Variable con tres niveles: “Nice” (temperaturas entre 40 y 80 grados Fahrenheit), “cold”         # (temperaturas menores o iguales a 40 grados) y “hot” (temperaturas mauyores o iguales a 80 grados).
+# -Grass: 1 si es pasto natural, 0 en caso contrario.
+# -Pressure: Y si el intento es en los últimos 3 minutos de juego y cambia el equipo con ventaja en caso de ser  # exitoso el gol de campo.
+# -Ice: 1 si Pressure=Y y un tiempo fuera ha sido pedido antes de la ejecución, 0 en caso contrario.
+
+```
+
+# a) Estimar un modelo usando la función “glm( )” y la fórmula Good ~ Distance, graficar usando “curve( )” 
+```{r}
+mod.est <- glm(Good ~Distance, data = placekickB, family = binomial(link = logit))
+
+#mod.fit1 <- glm(y ~ x1, set1, family = binomial(link = logit), trace=T)
+x11(width = 10, height = 6, pointsize = 12)
+par(mfrow= c(1,2))
+curve(expr = predict(object = mod.est, newdata = data.frame(Distance=x), type = "response"), col ="red", lwd=2, xlim = c(18,62))
+
+```
+
+# b) Estimar un modelo (sin interacciones) que utilice las variables independientes Distance, Weather, Wind15, Temperature, Grass, Pressure y Ice.
+```{r}
+mod.fit.SI <- glm(Good ~Distance+ Weather+Wind15+Temperature+Grass+Pressure+Ice, data = placekickB, family = binomial(link = logit))
+
+```
