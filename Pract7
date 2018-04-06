@@ -1,12 +1,17 @@
----
 title: "Practica 7"
 author: "Edgar Guevara"
 date: "5 de abril de 2018"
 output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
 ```{r}
-setwd("C:/Users/USUARIO/Documents/Var_Categoricas")
+setwd("Users/edgar 77/Documents/8vo/AVarCategoricas/")
+getwd()
 placekickB <- read.csv("placekick.BW.csv", header = T, sep = ",")
 names(placekickB)
 View(placekickB)
@@ -28,7 +33,7 @@ View(placekickB)
 ```{r}
 mod.est <- glm(Good ~Distance, data = placekickB, family = binomial(link = logit))
 
-#mod.fit1 <- glm(y ~ x1, set1, family = binomial(link = logit), trace=T)
+
 x11(width = 10, height = 6, pointsize = 12)
 par(mfrow= c(1,2))
 curve(expr = predict(object = mod.est, newdata = data.frame(Distance=x), type = "response"), col ="red", lwd=2, xlim = c(18,62))
@@ -37,6 +42,28 @@ curve(expr = predict(object = mod.est, newdata = data.frame(Distance=x), type = 
 
 # b) Estimar un modelo (sin interacciones) que utilice las variables independientes Distance, Weather, Wind15, Temperature, Grass, Pressure y Ice.
 ```{r}
-mod.fit.SI <- glm(Good ~Distance+ Weather+Wind15+Temperature+Grass+Pressure+Ice, data = placekickB, family = binomial(link = logit))
+mod.est.SI <- glm(Good ~Distance+ Weather+Wind15+Temperature+Grass+Pressure+Ice, family = binomial(link = logit), data = placekickB)
+```
+
+# c) Realizar LRTs para todas las variables independientes para determinar su  #    importancia en el modelo. Describir los resultados
+```{r}
+### LTR = RAZON DE VEROSIMILITUD
+install.packages("car")
+require(car)
+Anova(mod.est.SI, test = "LR")
+anova(mod.est.SI, test="Chisq")
+```
+
+# d) Calcular las 6 posibles razones de momios para Weather y determinar los respectivos intervalos de confianza para cada una. ¿Se puede encontrar el valor 1 en alguno de estos intervalos? Relacionar con la LRT para Weather realizada en c)
+
+```{r}
 
 ```
+
+
+
+```{r}
+
+```
+
+# i) Tomese Distance= 49, Wind=0 , Grass=1, Pressure=Y y Ice=1. Supóngase que  #    Weather=”Sun” y Temperature=”Nice”. Calcular el estimado de la            #    probabilidad de que el gol de campo sea exitoso.
