@@ -1,0 +1,63 @@
+# 12 Abril 2018
+
+#### Modelos lineales Generalizados
+#Componente aleatorio: hace referencia a la distribucion que vamos asociar a la variable dependiente
+#Regresion Logistica, y estaba asociada a una distribucion bernoulli o binomial 
+#Componente sistematico: Especifica una combinacion lineal de los parametros de regresion
+# Modelo de Regresion logistica usabamos un predictor lineal
+#Componente: Funcion de enlance: Especifica el valor del componente aletaorio, relaciona el valor esperado de y con el predictor lineal(combinacion lineal de var. indep)
+
+
+### Funcion de enlace
+#Funciones de enlace a utilizar cuando estamos con variables binarias (y es binaria)
+
+# Distribucion de Probabilidad Logistica
+#Parametros (mu y sigma)
+mu <- 2
+sigma <- 2
+# Queremos obtener f(-2) y F(-2)
+# f(-2)
+dlogis(x=-2, location = mu, scale = sigma)
+# F(-2)
+plogis(q=-2, location = mu, scale=sigma)
+# Graficar
+x11(width = 10, height = 6, pointsize = 12)
+par(mfrow=c(1,2))
+curve(expr = dlogis(x=x, location = mu, scale = sigma), ylab = "f(x)", xlab = "x",
+      xlim = c(-15,15), main= "PDF", col= "black", n=1000)
+abline(h=0)
+curve(expr = plogis(q=x, location = mu, scale = sigma), ylab = "f(x)", xlab = "x",
+      xlim = c(-15,15), main= "CDF", col= "black", n=1000)
+
+# Regresion logistica Utiliza como funcion de enlace a la funcion logit
+# puede utilizar tambien la funcion probit, loglog complementaria(acumulada se parece a la logistica y hace mas enfasis en 1-F),
+
+
+x11(width =7, height = 6, pointsize = 12)
+# Para graficar en un rango especifico de x
+par(xaxs= "i")
+rm(pi)
+# Media
+M <- 2
+# Varianza
+V <- 3
+# Limites para el eje x
+xlim.val <- c(qnorm(0.001, mean = M, sd= sqrt(V)), qnorm(0.999, mean = M, sd= sqrt(V)))
+# Numero de cifras significativas
+rd <- 2
+
+beta0 <- -M*pi/ (sqrt(3)* sqrt(V))
+beta1 <- pi/ (sqrt(3)* sqrt(V))
+
+curve(expr = plogis(beta0 + beta1*x), ylab = expression(pi),panel.first= grid(col = "gray", lty = "dotted" ),
+      xlab = "x",
+      xlim = xlim.val, col= "black", lwd=2, lty=1, ylim= c(0,1))
+logistic.beta <- data.frame(name= "logistic", beta0= round(beta0, rd), beta1=round(beta1,rd))
+
+### NORMAL
+#(X-mu)/ sigma = beta0 + beta1*X
+beta0 <- -M/ (sqrt(V))
+beta1 <- 1/ (sqrt(V))
+
+curve(expr = pnorm(beta0 + beta1*x), add = T, lty = "dashed", col= "blue", lwd=2 )
+normal.beta <- data.frame(name= "probit", beta0= round(beta0,rd), beta1= round(beta1, rd))
