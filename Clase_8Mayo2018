@@ -1,0 +1,117 @@
+######################################################## ARCHIVO FIBRA(1)
+##### 8 Mayo 2018
+
+# Modelo de momios no proporcionales
+install.packages("VGAM")
+library(VGAM)  
+
+# Primero se ajusta un modelo de momios proporcionales
+
+saveELM <- diet$bloat
+diet$bloat <- ordered(diet$bloat)
+
+### PARA ESTE MODELO NUESTRA VARIABLE DEPENDIENTE TIENE QUE SER DE TIPO ORDINAL, SI NUESTRA VARIABLE YA ES ORDINAL SOLO HAY
+### QUE INDICARLE A R QUE YA ESTA ORDENADA LA VARIABLE CON EL COMANDO "ORDERED" 
+mod.fit.po<-vglm(formula = bloat ~ fiber, family = cumulative(parallel = TRUE),
+                 weights = count, data = diet[diet$count != 0,])
+# EL PARALLEL (TRUE) NOS SIRVE PARA INDICARLE QUE UTILICE EL MODELO DE MOMIOS PROPORCIONALES
+summary(mod.fit.po)
+# -2.44258
+# LOS MOMIOS ACUMULATIVOS DECEECEN A MEDIDAD QUE LA VARIABLE FIBERBRAN CRECE.
+slotNames(mod.fit.po)  # estructura parecida a names( ) 
+mod.fit.po@coefficients
+mod.fit.po@df.residual
+#showMethods(class = "vglm") # Parecido a method(class = " ") in 
+
+mod.fit.npo<-vglm(formula = bloat ~ fiber, family = cumulative(parallel = FALSE),
+                  weights = count, data = diet[diet$count != 0,])
+# EL PARALLEL (FALSE) NOS SIRVE PARA INDICARLE QUE UTILICE EL MODELO DE MOMIOS NO PROPORCIONALES
+
+summary(mod.fit.npo) 
+round(mod.fit.npo@coefficients, 2)
+
+#anova(mod.fit.po, mod.fit.npo)
+
+### SE HACE PRUEBA DE HIPOTESIS PARA VER QUE MODELO NOS CONVIENE MAS PARA ESTAS OBSERVACIONES, YA SEA EL MODELO PROPORCIONAL O EL NO PROPORCIONAL
+tran.LR<-deviance(mod.fit.po) - deviance(mod.fit.npo)
+df<-mod.fit.po@df.residual - mod.fit.npo@df.residual
+p.value<-1 - pchisq(q = tran.LR, df = df)
+data.frame(tran.LR, df, p.value)
+#  DE ACUERDO AL RESULTADO
+#  AL MENOS EL GRUPO DE OBSERVACIONES NO DAN EVIDENCIA SUFICIENTE PARA CONCLUIR QUE SE ENCUENTRAN EN UN MODELO DE MOMIOS
+#  PROPORCIONALES
+
+# OTRA FORMA ALTERNATIVA PARA VER LA PRUBA DE HIPOTESIS ES MEDINATE LRT'S
+lrtest(mod.fit.npo, mod.fit.po) # Forma alterna
+
+# EstimaciÃ³n de pi_j
+predictvglm(object = mod.fit.po, newdata = data.frame(fiber = "bran"))
+predictvglm(object = mod.fit.po, newdata = data.frame(fiber = "bran"), type = "response")
+predictvglm(object = mod.fit.po, newdata = data.frame(fiber = "bran"), se.fit = TRUE)
+
+
+
+
+
+################################################################ ARCHIVO SEMAFORO 
+
+### 8 MAYO 2018 ###
+
+# https://www.google.com/maps/place/1501+N+33rd+St,+Lincoln,+NE+68503,+EE.+UU./@40.8283387,-96.6735948,18z/data=!4m5!3m4!1s0x8796bea2e956c939:0x6783a116a747753a!8m2!3d40.828021!4d-96.672861
+stoplight <- read.csv(file  = "Stoplight.csv")
+View(stoplight)
+
+# media y varianza de los datos observados
+mean(stoplight$vehicles)
+var(stoplight$vehicles)
+
+# Frequencias
+table(stoplight$vehicles) #Obs. que y = 0, 1, ..., 8 tiene conteos positivos
+rel.freq <- table(stoplight$vehicles)/length(stoplight$vehicles)
+### le agregamos 7 ceros al final para completar el dataframe que esta por debajo
+rel.freq2 <- c(rel.freq, rep(0, times = 7))
+rel.freq2
+
+# CÃ¡lculos poblacionales
+y <- 0:15
+prob <- round(dpois(x = y, lambda = mean(stoplight$vehicles)), 4)
+prob
+
+# Observados y Poisson
+data.frame(y, prob, rel.freq = rel.freq2)
+
+# GrÃ¡fica
+x11(width = 7, height = 6, pointsize = 12)
+plot(x = y - 0.1, y = prob, type = "h", ylab = "Probabilidad", xlab = "NÃºmero de vehÃ­culos", lwd = 2,
+     xaxt = "n")
+axis(side = 1, at = 0:15)
+lines(x = y + 0.1, y = rel.freq2, type = "h", lwd = 2, lty = "solid", col = "red")
+abline(h = 0)
+legend(x = 9, y = 0.15, legend = c("Poisson", "Observado"), lty = c("solid", "solid"), lwd = c(2,2), col = c("black", "red"), bty = "n")
+
+########################################################################
+# Intervalos de confianza
+
+alpha <- 0.05
+n <- length(stoplight$vehicles)
+
+### MEDIA MUESTRAL
+mu.hat <- mean(stoplight$vehicles)
+
+# Intervalo de Wald (para el valor de lambda(media))
+mu.hat + qnorm(p = c(alpha/2, 1 - alpha/2))*sqrt(mu.hat/n)
+
+# Intervalo de Score
+(mu.hat + qnorm(p = c(alpha/2, 1 - alpha/2))/(2*n)) + qnorm(p = c(alpha/2, 1 - alpha/2)) * sqrt((mu.hat + qnorm(p = 1 - alpha/2)/(4*n))/n)
+
+# Intervalo Exacto
+qchisq(p = c(alpha/2, 1 - alpha/2), df = c(2*n*mu.hat, 2*(n*mu.hat + 1)))/(2*n)
+# Forma alterna
+# qgamma(p = c(alpha/2, 1-alpha/2), shape = c(n*mu.hat, n*mu.hat+1), scale = 1)/n
+# c(qchisq(p = alpha/2, df = 2*n*mu.hat),qchisq(p = 1-alpha/2, df = 2*(n*mu.hat+1)))/(2*n)
+
+# Exact usando poisson.test 
+poisson.test(x = mu.hat*n)$conf.int / n
+
+# Usual t-distribution based interval
+t.test(x = stoplight$vehicles, conf.level = 0.95)
